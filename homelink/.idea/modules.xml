@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/homelink.iml" filepath="$PROJECT_DIR$/.idea/homelink.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../../../repo_template/torrent_collector/.idea/torrent_collector.iml" filepath="$PROJECT_DIR$/../../../repo_template/torrent_collector/.idea/torrent_collector.iml" />
     </modules>
   </component>
 </project>

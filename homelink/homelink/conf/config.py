@@ -12,8 +12,7 @@ LOG_CONFIG = {
 }
 
 
-
-DB_CONFIG = {
+MYSQL_CONFIG = {
     'DB_CONNECT_TYPE': 'sqlalchemy',
     'DB_CONNECT_STRING': 'mysql+pymysql://ascetic:ascetic@127.0.0.1:3306/houseprice?charset=utf8'
 }

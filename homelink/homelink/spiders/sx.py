@@ -23,7 +23,7 @@ class SxSpider(scrapy.Spider):
 
     def __init__(self, *args, **kwargs):
         super(SxSpider, self).__init__(*args, **kwargs)
-        self.sql_helper = SqlHomeLink(config.DB_CONFIG)
+        self.sql_helper = SqlHomeLink(config.MYSQL_CONFIG)
         self._init_logger()
         self._init_start_urls()
 
@@ -47,6 +47,15 @@ class SxSpider(scrapy.Spider):
         random.shuffle(self.start_urls)
 
     def start_requests(self):
+        house_id_list = self.sql_helper.get_house_id_list()
+        if house_id_list is not None:
+            random.shuffle(house_id_list)
+            for house_id in house_id_list:
+                if house_id[0] not in self.house_ids:
+                    self.house_ids.add(house_id[0])
+                    url = 'https://sx.lianjia.com/ershoufang/{0}.html'.format(house_id[0])
+                    yield scrapy.Request(url=url, callback=self.parse_details, dont_filter=True, errback=self.err_back, priority=0)
+
         for url in self.start_urls:
             yield scrapy.Request(url=url, callback=self.parse, dont_filter=True,
                                  errback=self.err_back, priority=0)
@@ -56,7 +65,12 @@ class SxSpider(scrapy.Spider):
 
         hrefs = set(response.xpath('//a[re:match(@href, "ershoufang/.+html")]/@href').extract())
         for href in hrefs:
-            yield response.follow(href, callback=self.parse_details, dont_filter=True)
+            house_id = href.split('/')[-1].split('.')[0]
+            if house_id in self.house_ids:
+                self.logger.info('house id already crawled: [{0}]'.format(response.url))
+            else:
+                self.house_ids.add(house_id)
+                yield response.follow(href, callback=self.parse_details, dont_filter=True)
 
     def parse_details(self, response):
         self.logger.info('current detail url: {0}'.format(response.url))
@@ -66,9 +80,9 @@ class SxSpider(scrapy.Spider):
             return
 
         house_id = response.url.split('/')[-1].split('.')[0]
-        if house_id in self.house_ids:
-            self.logger.info('house id already crawled: [{0}]'.format(response.url))
-            return
+        # if house_id in self.house_ids:
+        #     self.logger.info('house id already crawled: [{0}]'.format(response.url))
+        #     return
 
         self.house_ids.add(house_id)
         item = HomelinkItem()
@@ -85,7 +99,8 @@ class SxSpider(scrapy.Spider):
         item['orientation'] = response.xpath('//div[@class = "houseInfo"]/div[@class = "type"]/div[@class = "mainInfo"]/text()').extract_first()
         item['decoration'] = response.xpath('//div[@class = "houseInfo"]/div[@class = "type"]/div[@class = "subInfo"]/text()').extract_first()
 
-        item['house_size'] = response.xpath('//div[@class = "houseInfo"]/div[@class = "area"]/div[@class = "mainInfo"]/text()').extract_first()
+        # item['house_size'] = response.xpath('//div[@class = "houseInfo"]/div[@class = "area"]/div[@class = "mainInfo"]/text()').extract_first()
+        item['house_size'] = round(item['total_price'] / item['unit_price'] * 10000, 2)
         item['house_type'] = response.xpath('//div[@class = "houseInfo"]/div[@class = "area"]/div[@class = "subInfo"]/text()').extract_first()
 
         item['community'] = response.xpath('//div[@class = "aroundInfo"]/div[@class = "communityName"]//a[contains(@class, "info")]/text()').extract_first()
@@ -95,24 +110,21 @@ class SxSpider(scrapy.Spider):
         basic_info = response.xpath('//div[@class = "introContent"]/div[@class = "base"]/div[@class = "content"]/ul/li/text()').extract()
         if len(basic_info) >= 14:
             item['room_structure'] = basic_info[3]
-            # item['room_size'] = basic_info[4]
-            item['room_size'] = round(item['total_price']/item['unit_price'], 2)
+            item['room_size'] = basic_info[4]
             item['building_structure'] = basic_info[7]
             item['elevator_household_ratio'] = basic_info[9]
             item['elevator_included'] = basic_info[10]
             item['property_right_deadline'] = basic_info[11]
         elif len(basic_info) == 9:
             item['room_structure'] = None
-            # item['room_size'] = basic_info[3]
-            item['room_size'] = round(item['total_price'] / item['unit_price'], 2)
+            item['room_size'] = basic_info[3]
             item['building_structure'] = basic_info[5]
             item['elevator_household_ratio'] = None
             item['elevator_included'] = None
             item['property_right_deadline'] = basic_info[8]
         elif len(basic_info) == 12:
             item['room_structure'] = basic_info[3]
-            # item['room_size'] = basic_info[4]
-            item['room_size'] = round(item['total_price'] / item['unit_price'], 2)
+            item['room_size'] = basic_info[4]
             item['building_structure'] = basic_info[7]
             item['elevator_household_ratio'] = basic_info[9]
             item['elevator_included'] = basic_info[10]

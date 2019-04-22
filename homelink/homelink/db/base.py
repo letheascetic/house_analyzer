@@ -10,7 +10,7 @@ _Base = declarative_base()
 
 class HomeLink(_Base):
     """class for home_link"""
-    __tablename__ = 'home_link'
+    __tablename__ = 'home_link_sx'
 
     house_id = Column('house_id', BIGINT, primary_key=True, autoincrement=True, unique=True, nullable=False)
     city = Column('city', VARCHAR(64), index=True, nullable=False)

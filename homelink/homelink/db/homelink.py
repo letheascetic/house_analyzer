@@ -83,3 +83,10 @@ class SqlHomeLink(ISqlHelper):
             return False
         finally:
             pass
+
+    def get_house_id_list(self):
+        try:
+            query = self.session.query(HomeLink.house_id)
+            return query.all()
+        except Exception as e:
+            logger.exception('get house id list exception[{0}]'.format(e))

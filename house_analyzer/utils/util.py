@@ -2,7 +2,7 @@
 
 import os
 import logging
-from homelink.conf.config import LOG_CONFIG
+from conf.config import LOG_CONFIG
 from logging.handlers import TimedRotatingFileHandler
 
 

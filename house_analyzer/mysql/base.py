@@ -10,7 +10,7 @@ _Base = declarative_base()
 
 class HomeLink(_Base):
     """class for home_link"""
-    __tablename__ = 'home_link_sx'
+    __tablename__ = 'home_link'
 
     house_id = Column('house_id', BIGINT, primary_key=True, autoincrement=True, unique=True, nullable=False)
     city = Column('city', VARCHAR(64), index=True, nullable=False)
@@ -31,7 +31,15 @@ class HomeLink(_Base):
     elevator_household_ratio = Column('elevator_household_ratio', VARCHAR(64), default=None, nullable=True)
     elevator_included = Column('elevator_included', VARCHAR(64), default=None, nullable=True)
     property_right_deadline = Column('property_right_deadline', VARCHAR(64), default=None, nullable=True)
-    list_date = Column('list_date', VARCHAR(64), index=True, default=None, nullable=True)
     last_trading_date = Column('last_trading_date', VARCHAR(64), index=True, default=None, nullable=True)
     create_time = Column('create_time', TIMESTAMP, default=datetime.datetime.utcnow, index=True)
     update_time = Column('update_time', TIMESTAMP, default=None, index=True, onupdate=datetime.datetime.utcnow)
+    history_price = Column('history_price', VARCHAR(2048), default=None)
+    status = Column('status', INTEGER, default=1)
+    list_date = Column('list_date', VARCHAR(64), index=True, default=None, nullable=True)
+    list_total_price = Column('list_total_price', FLOAT, default=None, nullable=True)
+    deal_date = Column('deal_date', VARCHAR(64), index=True, default=None, nullable=True)
+    deal_total_price = Column('deal_total_price', FLOAT, default=None, nullable=True)
+    deal_unit_price = Column('deal_unit_price', FLOAT, default=None, nullable=True)
+    deal_time_span = Column('deal_time_span', INTEGER, default=None, nullable=True)
+    price_change_times = Column('price_change_times', INTEGER, default=None, nullable=True)

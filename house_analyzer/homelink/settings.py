@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 
-BOT_NAME = 'homelink'
+BOT_NAME = 'house_analyzer'
 
-SPIDER_MODULES = ['homelink.spiders']
-NEWSPIDER_MODULE = 'homelink.spiders'
+SPIDER_MODULES = ['house_analyzer.spiders']
+NEWSPIDER_MODULE = 'house_analyzer.spiders'
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'
 
 ROBOTSTXT_OBEY = True
 CONCURRENT_REQUESTS = 4
-DOWNLOAD_DELAY = 3
+DOWNLOAD_DELAY = 1
 RANDOMIZE_DOWNLOAD_DELAY = True
 CONCURRENT_REQUESTS_PER_DOMAIN = 4
 COOKIES_ENABLED = False
@@ -23,5 +23,5 @@ DEFAULT_REQUEST_HEADERS = {
 }
 
 ITEM_PIPELINES = {
-    'homelink.pipelines.FilterPipeline': 300,
+    'house_analyzer.pipelines.FilterPipeline': 300,
 }

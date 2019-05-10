@@ -8,6 +8,8 @@ from sqlalchemy.ext.declarative import declarative_base
 from conf import config
 from mysql.base import HomeLink
 from mysql.sqlutil import ISqlHelper
+from mysql.base import HlHouseBasicInfo
+from mysql.base import HlHouseDynamicInfo
 
 
 _Base = declarative_base()
@@ -170,3 +172,43 @@ class SqlHl(ISqlHelper):
             return query.all()
         except Exception as e:
             logger.exception('get house id list exception[{0}]'.format(e))
+
+    def get_hl_data(self):
+        try:
+            query = self.session.query(HomeLink)
+            return query.all()
+        except Exception as e:
+            logger.exception('get homelink data exception[{0}]'.format(e))
+
+    def query_house_dynamic_info(self, house_id, record_date):
+        try:
+            query = self.session.query(HlHouseDynamicInfo).filter(HlHouseDynamicInfo.house_id == house_id).filter(HlHouseDynamicInfo.record_date == record_date)
+            return query.first()
+        except Exception as e:
+            logger.exception('query house dynamic info[{0}{1}] exception[{2}]'.format(house_id, record_date, e))
+
+    def update_session(self):
+        try:
+            self.session.commit()
+        except Exception as e:
+            logger.exception('update exception[{0}]'.format(e))
+
+    def insert_or_update_house_dynamic_info(self, house_id, record_date, price):
+        try:
+            total_price, unit_price = price
+            query = self.session.query(HlHouseDynamicInfo).filter(HlHouseDynamicInfo.house_id == house_id).filter(HlHouseDynamicInfo.record_date == record_date)
+            dynamic_info = query.first()
+            if dynamic_info is not None:
+                dynamic_info.total_price = total_price
+                dynamic_info.unit_price = unit_price
+            else:
+                dynamic_info = HlHouseDynamicInfo(
+                    house_id=house_id,
+                    record_date=record_date,
+                    total_price=total_price,
+                    unit_price=unit_price
+                )
+                self.session.add(dynamic_info)
+            self.session.commit()
+        except Exception as e:
+            logger.exception('insert or update house dynamic info[{0}:{1}:{2}] exception[{3}]'.format(house_id, record_date, price, e))

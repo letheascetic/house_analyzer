@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import datetime
 from scrapy.exceptions import DropItem
 
 
@@ -15,11 +16,10 @@ class FilterPipeline(object):
         if not sql_helper:
             raise DropItem('sql helper is None: [{0}]'.format(item))
 
-        row = sql_helper.query(item)
-        if row is not None:
-            logger.info('update old item[{0}].'.format(item))
-            sql_helper.update(row, item)
-        else:
-            logger.info('insert new item[{0}].'.format(item))
-            sql_helper.insert(item)
+        sql_helper.insert_or_update_house_basic_info(item)
+
+        record_date = datetime.datetime.today().strftime('%Y-%m-%d')
+        price = (item['total_price'], item['unit_price'])
+        sql_helper.insert_or_update_house_dynamic_info(item['house_id'], record_date, price)
+
         return item

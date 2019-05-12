@@ -7,22 +7,25 @@ import logging
 from utils import util
 from conf import config
 from mysql.sqlhl import SqlHl
-from mysql.base import HlHouseDynamicInfo
 
 
 class MergeTool:
     """merge old db data to new db schema"""
     def __init__(self):
         self._init_logger()
-        self.sql_helper = SqlHl(config.MYSQL_CONFIG)
+        self.sql_helper_testing = SqlHl(config.MYSQL_CONFIG_TESTING)
+        self.sql_helper_production = SqlHl(config.MYSQL_CONFIG_PRODUCTION)
         pass
 
     def _init_logger(self):
         util.config_logger()
         self.logger = logging.getLogger(__name__)
 
+    # def merge_house_basic_info(self):
+    #     for basic_info in self.sql_helper_testing.get_all_house_basic_info():
+
     def merge(self):
-        for house in self.sql_helper.get_hl_data():
+        for house in self.sql_helper_testing.get_hl_data():
             history_price = {}
             if house.history_price is not None:
                 history_price = json.loads(house.history_price)

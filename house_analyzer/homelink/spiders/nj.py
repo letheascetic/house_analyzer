@@ -14,17 +14,21 @@ from scrapy.spidermiddlewares.httperror import HttpError
 from twisted.internet.error import TimeoutError, TCPTimedOutError
 
 
-class SxSpider(scrapy.Spider):
-    name = 'sx'
-    allowed_domains = ['sx.lianjia.com']
+class NjSpider(scrapy.Spider):
+    name = 'nj'
+    allowed_domains = ['nj.lianjia.com']
 
     house_ids = set()
     logger = None
     sql_helper = None
 
+    districts = ['gulou', 'jianye', 'qinhuai', 'xuanwu', 'yuhuatai', 'qixia', 'jiangning', 'pukou', 'liuhe', 'lishui', 'gaochun']
+    subways = ['li110460689', 'li99785159', 'li110460690', 'li99666695', 'li1420027174350126', 'li1417124675302304', 'li1420033552313102',
+               'li99785188', 'li1420033554408488', 'li110460691']
+
     def __init__(self, *args, **kwargs):
-        super(SxSpider, self).__init__(*args, **kwargs)
-        self.sql_helper = SqlHl(config.MYSQL_CONFIG_PRODUCTION)
+        super(NjSpider, self).__init__(*args, **kwargs)
+        self.sql_helper = SqlHl(config.MYSQL_CONFIG_TESTING)
         self._init_logger()
         self._init_start_urls()
 
@@ -33,34 +37,24 @@ class SxSpider(scrapy.Spider):
         self.logger = logging.getLogger(__name__)
 
     def _init_start_urls(self):
-        self.start_urls.extend(
-            ['https://sx.lianjia.com/ershoufang/keqiaoqu/pg{0}/'.format(page) for page in range(1, 101)])
-        self.start_urls.extend(
-            ['https://sx.lianjia.com/ershoufang/yuechengqu/pg{0}/'.format(page) for page in range(1, 101)])
-        self.start_urls.extend(
-            ['https://sx.lianjia.com/ershoufang/shangyuqu/pg{0}/'.format(page) for page in range(1, 11)])
-        self.start_urls.extend(
-            ['https://sx.lianjia.com/ershoufang/shengzhoushi/pg{0}/'.format(page) for page in range(1, 11)])
-        self.start_urls.extend(
-            ['https://sx.lianjia.com/ershoufang/xinchangxian/pg{0}/'.format(page) for page in range(1, 11)])
-        self.start_urls.extend(
-            ['https://sx.lianjia.com/ershoufang/zhujishi/pg{0}/'.format(page) for page in range(1, 11)])
-        self.start_urls.extend(
-            ['https://sx.lianjia.com/chengjiao/pg{0}/'.format(page) for page in range(1, 11)])
+        for district in self.districts:
+            self.start_urls.extend(['https://nj.lianjia.com/ershoufang/{0}/pg{1}/'.format(district, page) for page in range(1, 101)])
+            self.start_urls.extend(['https://nj.lianjia.com/chengjiao/{0}/pg{1}/'.format(district, page) for page in range(1, 101)])
+        for subway in self.subways:
+            self.start_urls.extend(['https://nj.lianjia.com/ditiefang/{0}/pg{1}/'.format(subway, page) for page in range(1, 101)])
         random.shuffle(self.start_urls)
 
     def start_requests(self):
-        # for url in self.start_urls:
-        #     yield scrapy.Request(url=url, callback=self.parse, dont_filter=True, errback=self.err_back, priority=0)
+        for url in self.start_urls:
+            yield scrapy.Request(url=url, callback=self.parse, dont_filter=True, errback=self.err_back, priority=0)
 
-        # house_id_list = self.sql_helper.get_house_id_list('sx', config.HOUSE_STATUS['ON_SALE'])
-        house_id_list = self.sql_helper.get_house_id_list_v2()
+        house_id_list = self.sql_helper.get_house_id_list(config.HOUSE_STATUS['ON_SALE'])
         if house_id_list is not None:
             random.shuffle(house_id_list)
             for house_id in house_id_list:
                 if house_id[0] not in self.house_ids:
                     # self.house_ids.add(house_id[0])
-                    url = 'https://sx.lianjia.com/ershoufang/{0}.html'.format(house_id[0])
+                    url = 'https://nj.lianjia.com/ershoufang/{0}.html'.format(house_id[0])
                     yield scrapy.Request(url=url, callback=self.parse_details, dont_filter=True, errback=self.err_back, priority=0)
 
     def parse(self, response):
@@ -79,8 +73,8 @@ class SxSpider(scrapy.Spider):
     def parse_details(self, response):
         self.logger.info('current detail url: {0}'.format(response.url))
 
-        if response.url.find('sx.lianjia.com') < 0:
-            self.logger.info('not shao xing house info: [{0}]'.format(response.url))
+        if response.url.find('nj.lianjia.com') < 0:
+            self.logger.info('not nan jing house info: [{0}]'.format(response.url))
             return
 
         house_id = response.url.split('/')[-1].split('.')[0]
@@ -104,7 +98,7 @@ class SxSpider(scrapy.Spider):
         # 必填项
         item = HomelinkItem()
         item['url'] = response.url
-        item['city'] = 'sx'
+        item['city'] = 'nj'
         item['house_id'] = house_id
 
         status_tag = response.xpath('//div/div[@class = "wrapper"]/span/text()').extract_first()
@@ -152,7 +146,7 @@ class SxSpider(scrapy.Spider):
         # 必填项
         item = HomelinkItem()
         item['url'] = response.url
-        item['city'] = 'sx'
+        item['city'] = 'nj'
         item['house_id'] = house_id
 
         status_tag = response.xpath('//h1[@class = "main"]/span/text()').extract_first()
@@ -215,12 +209,11 @@ class SxSpider(scrapy.Spider):
             item['elevator_included'] = basic_info[10]
             item['property_right_deadline'] = basic_info[11]
         else:
-            self.logger.warning('not xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx shao xing house info: [{0}]'.format(response.url))
+            self.logger.warning('not xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx nan jing house info: [{0}]'.format(response.url))
             return
 
         # get transaction info
-        transaction_info = response.xpath(
-            '//div[@class = "introContent"]/div[@class = "transaction"]/div[@class = "content"]/ul/li/span[not(@class)]/text()').extract()
+        transaction_info = response.xpath('//div[@class = "introContent"]/div[@class = "transaction"]/div[@class = "content"]/ul/li/span[not(@class)]/text()').extract()
         item['list_date'] = transaction_info[0]
         item['last_trading_date'] = transaction_info[2]
 

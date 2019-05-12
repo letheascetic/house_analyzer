@@ -50,6 +50,7 @@ class HomelinkItem(scrapy.Item):
     deal_unit_price = scrapy.Field()        # 成交单价
     deal_time_span = scrapy.Field()         # 成交周期（天）
     list_total_price = scrapy.Field()       # 挂牌总价
+    list_unit_price = scrapy.Field()
     price_change_times = scrapy.Field()     # 调价次数
 
     pass

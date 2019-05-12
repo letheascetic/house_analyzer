@@ -2,8 +2,8 @@
 
 BOT_NAME = 'house_analyzer'
 
-SPIDER_MODULES = ['house_analyzer.spiders']
-NEWSPIDER_MODULE = 'house_analyzer.spiders'
+SPIDER_MODULES = ['homelink.spiders']
+NEWSPIDER_MODULE = 'homelink.spiders'
 
 USER_AGENT = 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36'
 
@@ -23,5 +23,5 @@ DEFAULT_REQUEST_HEADERS = {
 }
 
 ITEM_PIPELINES = {
-    'house_analyzer.pipelines.FilterPipeline': 300,
+    'homelink.pipelines.FilterPipeline': 300,
 }

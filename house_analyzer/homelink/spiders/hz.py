@@ -29,7 +29,7 @@ class HzSpider(scrapy.Spider):
 
     def __init__(self, *args, **kwargs):
         super(HzSpider, self).__init__(*args, **kwargs)
-        self.sql_helper = SqlHl(config.MYSQL_CONFIG_TESTING)
+        self.sql_helper = SqlHl(config.MYSQL_CONFIG_PRODUCTION)
         self._init_logger()
         self._init_start_urls()
 
@@ -49,7 +49,7 @@ class HzSpider(scrapy.Spider):
         for url in self.start_urls:
             yield scrapy.Request(url=url, callback=self.parse, dont_filter=True, errback=self.err_back, priority=0)
 
-        house_id_list = self.sql_helper.get_house_id_list(config.HOUSE_STATUS['ON_SALE'])
+        house_id_list = self.sql_helper.get_house_id_list('hz', config.HOUSE_STATUS['ON_SALE'])
         if house_id_list is not None:
             random.shuffle(house_id_list)
             for house_id in house_id_list:
@@ -118,7 +118,11 @@ class HzSpider(scrapy.Spider):
         item['deal_unit_price'] = float(response.xpath('//div[@class = "price"]/b/text()').extract_first())
 
         item['list_total_price'] = float(response.xpath('//div[@class = "msg"]/span/label/text()').extract_first())
-        item['deal_time_span'] = int(response.xpath('//div[@class = "msg"]/span/label/text()').extract()[1])
+        try:
+            item['deal_time_span'] = int(response.xpath('//div[@class = "msg"]/span/label/text()').extract()[1])
+        except Exception as e:
+            self.logger.warning('convert deal time span exception: [{0}]'.format(e))
+            item['deal_time_span'] = None
         item['price_change_times'] = int(response.xpath('//div[@class = "msg"]/span/label/text()').extract()[2])
 
         # 成交房源可获取到的其他数据项
@@ -134,8 +138,11 @@ class HzSpider(scrapy.Spider):
         item['unit_price'] = item['deal_unit_price']
         item['house_size'] = round(item['total_price'] / item['unit_price'] * 10000, 2)
 
-        list_date = datetime.datetime.strptime(item['deal_date'], "%Y-%m-%d") - datetime.timedelta(days=item['deal_time_span'])
-        item['list_date'] = list_date.strftime('%Y-%m-%d')
+        if item['deal_time_span'] is not None:
+            list_date = datetime.datetime.strptime(item['deal_date'], "%Y-%m-%d") - datetime.timedelta(days=item['deal_time_span'])
+            item['list_date'] = list_date.strftime('%Y-%m-%d')
+        else:
+            item['list_date'] = None
 
         item['list_unit_price'] = round(item['list_total_price'] / item['house_size'] * 10000, 2)
 
@@ -182,8 +189,18 @@ class HzSpider(scrapy.Spider):
         community = ''.join(response.xpath(
             '//div[@class = "aroundInfo"]/div[@class = "communityName"]//a[contains(@class, "info")]/text()').extract_first().split(' '))
         item['community'] = community.replace('▪', '·')
-        item['district'] = response.xpath('//div[@class = "aroundInfo"]/div[@class = "areaName"]//a/text()').extract()[0]
-        item['location'] = response.xpath('//div[@class = "aroundInfo"]/div[@class = "areaName"]//a/text()').extract()[-1]
+
+        location_info = response.xpath('//div[@class = "aroundInfo"]/div[@class = "areaName"]//a/text()').extract()
+        if len(location_info) == 3:
+            item['district'], item['location'], item['subway_info'] = location_info
+        elif len(location_info) == 2:
+            item['district'] = location_info[0]
+            item['location'] = location_info[1]
+            item['subway_info'] = None
+        else:
+            item['district'] = location_info[0]
+            item['location'] = None
+            item['subway_info'] = None
 
         # get basic info
         basic_info = response.xpath(

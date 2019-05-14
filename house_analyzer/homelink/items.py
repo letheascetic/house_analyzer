@@ -28,6 +28,7 @@ class HomelinkItem(scrapy.Item):
     community = scrapy.Field()      # 所在小区（聚银时代）
     district = scrapy.Field()       # 所在区（柯桥区）
     location = scrapy.Field()       # 所在区位置（柯北）
+    subway_info = scrapy.Field()
 
     # 在售房源相关数据 - 基本信息（基本属性）
     room_structure = scrapy.Field()         # 户型结构（平层、暂无数据）

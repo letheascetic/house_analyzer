@@ -60,6 +60,7 @@ class HlHouseBasicInfo(_Base):
     community = Column('community', VARCHAR(64), index=True, nullable=False)
     district = Column('district', VARCHAR(64), index=True, nullable=False)
     location = Column('location', VARCHAR(64), index=True, nullable=False)
+    subway_info = Column('subway_info', VARCHAR(256), index=True, nullable=False)
     room_structure = Column('room_structure', VARCHAR(64), default=None, nullable=True)
     room_size = Column('room_size', VARCHAR(64), default=None, nullable=True)
     building_structure = Column('building_structure', VARCHAR(64), default=None, nullable=True)

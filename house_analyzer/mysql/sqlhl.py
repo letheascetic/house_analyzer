@@ -1,7 +1,6 @@
 # coding: utf-8
 
 import logging
-from sqlalchemy import distinct
 from sqlalchemy.ext.declarative import declarative_base
 
 from conf import config
@@ -45,6 +44,7 @@ class SqlHl(ISqlHelper):
                         community=item['community'],
                         district=item['district'],
                         location=item['location'],
+                        subway_info=item['subway_info'],
                         room_structure=item['room_structure'],
                         room_size=item['room_size'],
                         building_structure=item['building_structure'],

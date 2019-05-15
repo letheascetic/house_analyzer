@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+import sys
 import logging
 from conf.config import LOG_CONFIG
 from logging.handlers import TimedRotatingFileHandler
@@ -35,7 +36,7 @@ def config_logger(prefix=None):
     root_logger.addHandler(log_handler)
 
     # stream handler
-    # stream_handler = logging.StreamHandler(sys.stdout)
-    # stream_handler.setLevel(logging.DEBUG)
-    # stream_handler.setFormatter(log_config.get('LOG_FORMAT'))
-    # root_logger.addHandler(stream_handler)
+    stream_handler = logging.StreamHandler(sys.stdout)
+    stream_handler.setLevel(logging.INFO)
+    stream_handler.setFormatter(log_config.get('LOG_FORMAT'))
+    root_logger.addHandler(stream_handler)

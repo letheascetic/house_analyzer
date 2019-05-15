@@ -123,11 +123,11 @@ class SxSpider(scrapy.Spider):
         item['deal_unit_price'] = float(response.xpath('//div[@class = "price"]/b/text()').extract_first())
 
         item['list_total_price'] = float(response.xpath('//div[@class = "msg"]/span/label/text()').extract_first())
-        if item['deal_time_span'] is not None:
-            list_date = datetime.datetime.strptime(item['deal_date'], "%Y-%m-%d") - datetime.timedelta(days=item['deal_time_span'])
-            item['list_date'] = list_date.strftime('%Y-%m-%d')
-        else:
-            item['list_date'] = None
+        try:
+            item['deal_time_span'] = int(response.xpath('//div[@class = "msg"]/span/label/text()').extract()[1])
+        except Exception as e:
+            self.logger.warning('convert deal time span exception: [{0}]'.format(e))
+            item['deal_time_span'] = None
         item['price_change_times'] = int(response.xpath('//div[@class = "msg"]/span/label/text()').extract()[2])
 
         # 成交房源可获取到的其他数据项

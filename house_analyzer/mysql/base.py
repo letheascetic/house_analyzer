@@ -91,3 +91,26 @@ class HlHouseDynamicInfo(_Base):
     unit_price = Column('unit_price', FLOAT, index=True, nullable=False)
     record_date = Column('record_date', DATE, index=True, default=None, nullable=False)
     update_time = Column('update_time', TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
+class HlCommunityDynamicInfo(_Base):
+    """class for hl_community_dynamic_info"""
+
+    __tablename__ = 'hl_community_dynamic_info'
+
+    id = Column('id', BIGINT, primary_key=True, autoincrement=True, nullable=False)
+    community = Column('community', VARCHAR(64), index=True, nullable=False)
+    city = Column('city', VARCHAR(64), index=True, nullable=False)
+    statistical_date = Column('statistical_date', DATE, index=True, nullable=False)
+    total_on_sale = Column('total_on_sale', INTEGER, nullable=False)
+    total_off_sale = Column('total_off_sale', INTEGER, nullable=False)
+    total_sold = Column('total_sold', INTEGER, nullable=False)
+    new_on_sale = Column('new_on_sale', INTEGER, nullable=False)
+    new_off_sale = Column('new_off_sale', INTEGER, nullable=False)
+    new_sold = Column('new_sold', INTEGER, nullable=False)
+    total_on_sale_unit_price = Column('total_on_sale_unit_price', FLOAT, nullable=False)
+    total_on_sale_unit_price_per_size = Column('total_on_sale_unit_price_per_size', FLOAT, nullable=False)
+    new_sold_unit_price = Column('new_sold_unit_price', FLOAT, nullable=False)
+    new_sold_unit_price_per_size = Column('new_sold_unit_price_per_size', FLOAT, nullable=False)
+    new_sold_time_span = Column('new_sold_time_span', FLOAT, nullable=False)
+    update_time = Column('update_time', TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)

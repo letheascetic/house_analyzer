@@ -33,7 +33,7 @@ class NjSpider(scrapy.Spider):
         self._init_start_urls()
 
     def _init_logger(self):
-        util.config_logger()
+        # util.config_logger()
         self.logger = logging.getLogger(__name__)
 
     def _init_start_urls(self):

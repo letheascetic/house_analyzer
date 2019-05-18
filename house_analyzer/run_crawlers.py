@@ -11,10 +11,10 @@ from scrapy.utils.project import get_project_settings
 
 if __name__ == '__main__':
     process = CrawlerProcess(get_project_settings())
-    # process.crawl(SxSpider)
-    # process.crawl(HzSpider)
-    # process.crawl(NjSpider)
-    # process.crawl(Nj2Spider)
+    process.crawl(SxSpider)
+    process.crawl(HzSpider)
+    process.crawl(NjSpider)
+    process.crawl(Nj2Spider)
     process.crawl(Hz2Spider)
     process.start()
     pass

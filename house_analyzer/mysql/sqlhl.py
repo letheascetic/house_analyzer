@@ -2,6 +2,7 @@
 
 import logging
 import datetime
+from sqlalchemy import or_,and_
 from sqlalchemy.ext.declarative import declarative_base
 
 from conf import config
@@ -160,9 +161,9 @@ class SqlHl(ISqlHelper):
             if item['status'] in config.HOUSE_STATUS_DEAL:
                 all_dynamic_info_record_date = []
                 all_dynamic_info = self.query_all_house_dynamic_info(house_id)
-                if all_dynamic_info is not None:
-                    all_dynamic_info_record_date = [dynamic_info.strftime('%Y-%m-%d') for dynamic_info in all_dynamic_info]
-                if item['deal_date'] not in all_dynamic_info_record_date and \
+                if all_dynamic_info:
+                    all_dynamic_info_record_date = [dynamic_info.record_date.strftime('%Y-%m-%d') for dynamic_info in all_dynamic_info]
+                if item['deal_date'] is not None and item['deal_date'] not in all_dynamic_info_record_date and \
                         item['deal_total_price'] is not None and item['deal_unit_price'] is not None:
                     new_dynamic_info = HlHouseDynamicInfo(
                         house_id=house_id,
@@ -171,7 +172,7 @@ class SqlHl(ISqlHelper):
                         unit_price=item['deal_unit_price']
                     )
                     self.session.add(new_dynamic_info)
-                if item['list_date'] not in all_dynamic_info_record_date and \
+                if item['list_date'] is not None and item['list_date'] not in all_dynamic_info_record_date and \
                         item['list_total_price'] is not None and item['list_unit_price'] is not None:
                     new_dynamic_info = HlHouseDynamicInfo(
                         house_id=house_id,
@@ -210,7 +211,7 @@ class SqlHl(ISqlHelper):
                             house_id, dynamic_info.record_date, (dynamic_info.total_price, dynamic_info.unit_price), record_date, (total_price, unit_price)))
                         dynamic_info.total_price = total_price
                         dynamic_info.unit_price = unit_price
-                self.session.commit()
+            self.session.commit()
 
         except Exception as e:
             self.session.rollback()
@@ -238,60 +239,131 @@ class SqlHl(ISqlHelper):
         except Exception as e:
             logger.exception('get all communities exception[{0}]'.format(e))
 
-    def get_community_total_status(self, city, community):
+    def get_community_total_on_sale(self, city, community, next_month_first_day):
         try:
-            query = self.session.query(HlHouseBasicInfo.status, func.count('*'))\
-                .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
-                .group_by(HlHouseBasicInfo.status)
-            return query.all()
-        except Exception as e:
-            logger.exception('get community[{0}:{1}] total status exception[{2}]'.format(city, community, e))
-
-    def get_community_new_on_sale(self, city, community, time_begin, time_end):
-        try:
+            # query a
             query = self.session.query(func.count('1'))\
                 .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
                 .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['ON_SALE'])\
-                .filter(HlHouseBasicInfo.list_date.between(time_begin, time_end))
-            return query.one()[0]
-        except Exception as e:
-            logger.exception('get community[{0}:{1}] new on sale exception[{2}]'.format(city, community, e))
+                .filter(HlHouseBasicInfo.list_date < next_month_first_day)
+            a = query.one()[0]
 
-    def get_community_new_off_sale(self, city, community, time_begin, time_end):
-        try:
+            # query b
             query = self.session.query(func.count('1'))\
                 .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
                 .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['OFF_SALE'])\
-                .filter(HlHouseBasicInfo.update_time.between(time_begin, time_end))
-            return query.one()[0]
-        except Exception as e:
-            logger.exception('get community[{0}:{1}] new off sale exception[{2}]'.format(city, community, e))
+                .filter(HlHouseBasicInfo.list_date < next_month_first_day)\
+                .filter(HlHouseBasicInfo.update_time >= next_month_first_day)
+            b = query.one()[0]
 
-    def get_community_new_sold(self, city, community, time_begin, time_end):
+            # query c
+            query = self.session.query(func.count('1'))\
+                .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
+                .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['DEAL'])\
+                .filter(HlHouseBasicInfo.list_date < next_month_first_day)\
+                .filter(HlHouseBasicInfo.deal_date >= next_month_first_day)
+            c = query.one()[0]
+
+            logger.info('get community[{0}:{1}] total on sale[{2}]'.format(city, community, (a, b, c)))
+
+            return a + b + c
+        except Exception as e:
+            logger.exception('get community[{0}:{1}] total on sale exception[{2}]'.format(city, community, e))
+
+    def get_community_total_off_sale(self, city, community, next_month_first_day):
+        try:
+            # query a
+            query = self.session.query(func.count('1'))\
+                .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
+                .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['OFF_SALE'])\
+                .filter(HlHouseBasicInfo.update_time < next_month_first_day)
+            a = query.one()[0]
+
+            # query b
+            query = self.session.query(func.count('1'))\
+                .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
+                .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['OFF_SALE'])\
+                .filter(HlHouseBasicInfo.update_time.is_(None))\
+                .filter(HlHouseBasicInfo.create_time < next_month_first_day)
+            b = query.one()[0]
+
+            logger.info('get community[{0}:{1}] total off sale[{2}]'.format(city, community, (a, b)))
+
+            return a + b
+        except Exception as e:
+            logger.exception('get community[{0}:{1}] total off sale exception[{2}]'.format(city, community, e))
+
+    def get_community_total_sold(self, city, community, next_month_first_day):
         try:
             query = self.session.query(func.count('1'))\
                 .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
                 .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['DEAL'])\
-                .filter(HlHouseBasicInfo.deal_date.between(time_begin, time_end))
+                .filter(HlHouseBasicInfo.deal_date < next_month_first_day)
+            return query.one()[0]
+        except Exception as e:
+            logger.exception('get community[{0}:{1}] total sold exception[{2}]'.format(city, community, e))
+
+    # def get_community_total_status(self, city, community):
+    #     try:
+    #         query = self.session.query(HlHouseBasicInfo.status, func.count('*'))\
+    #             .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
+    #             .group_by(HlHouseBasicInfo.status)
+    #         return query.all()
+    #     except Exception as e:
+    #         logger.exception('get community[{0}:{1}] total status exception[{2}]'.format(city, community, e))
+
+    def get_community_new_on_sale(self, city, community, this_month_first_day, next_month_first_day):
+        try:
+            query = self.session.query(func.count('1'))\
+                .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
+                .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['ON_SALE'])\
+                .filter(HlHouseBasicInfo.list_date.between(this_month_first_day, next_month_first_day))
+            return query.one()[0]
+        except Exception as e:
+            logger.exception('get community[{0}:{1}] new on sale exception[{2}]'.format(city, community, e))
+
+    def get_community_new_off_sale(self, city, community, this_month_first_day, next_month_first_day):
+        try:
+            query = self.session.query(func.count('1'))\
+                .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
+                .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['OFF_SALE'])\
+                .filter(HlHouseBasicInfo.update_time.between(this_month_first_day, next_month_first_day))
+            return query.one()[0]
+        except Exception as e:
+            logger.exception('get community[{0}:{1}] new off sale exception[{2}]'.format(city, community, e))
+
+    def get_community_new_sold(self, city, community, this_month_first_day, next_month_first_day):
+        try:
+            query = self.session.query(func.count('1'))\
+                .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
+                .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['DEAL'])\
+                .filter(HlHouseBasicInfo.deal_date.between(this_month_first_day, next_month_first_day))
             return query.one()[0]
         except Exception as e:
             logger.exception('get community[{0}:{1}] new sold exception[{2}]'.format(city, community, e))
 
-    def get_community_total_on_sale_unit_price(self, city, community):
+    def get_community_total_on_sale_unit_price(self, city, community, next_month_first_day):
         try:
-            query = self.session.query(HlHouseBasicInfo.house_id, HlHouseBasicInfo.house_size,
-                                       HlHouseDynamicInfo.record_date, HlHouseDynamicInfo.total_price,
+            query = self.session.query(HlHouseBasicInfo.house_id, HlHouseDynamicInfo.record_date,
+                                       HlHouseDynamicInfo.total_price, HlHouseBasicInfo.house_size,
                                        HlHouseDynamicInfo.unit_price)\
                 .join(HlHouseDynamicInfo, HlHouseBasicInfo.house_id == HlHouseDynamicInfo.house_id)\
                 .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
-                .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['ON_SALE'])
+                .filter(HlHouseDynamicInfo.record_date < next_month_first_day)\
+                .filter(or_(and_(HlHouseBasicInfo.status == config.HOUSE_STATUS['ON_SALE'], HlHouseBasicInfo.list_date < next_month_first_day),
+                            and_(HlHouseBasicInfo.status == config.HOUSE_STATUS['OFF_SALE'], HlHouseBasicInfo.list_date < next_month_first_day, HlHouseBasicInfo.update_time >= next_month_first_day),
+                            and_(HlHouseBasicInfo.status == config.HOUSE_STATUS['DEAL'], HlHouseBasicInfo.list_date < next_month_first_day, HlHouseBasicInfo.deal_date >= next_month_first_day)))
+
             return query.all()
         except Exception as e:
             logger.exception('get community[{0}:{1}] total on sale unit price exception[{2}]'.format(city, community, e))
 
     def get_community_new_sold_unit_price(self, city, community, time_begin, time_end):
         try:
-            query = self.session.query(func.count('1'), func.avg(HlHouseBasicInfo.deal_unit_price), func.sum(HlHouseBasicInfo.deal_total_price), func.sum(HlHouseBasicInfo.house_size), func.avg(HlHouseBasicInfo.deal_time_span))\
+            query = self.session.query(func.count('1'), func.avg(HlHouseBasicInfo.deal_unit_price),
+                                       func.sum(HlHouseBasicInfo.deal_total_price),
+                                       func.sum(HlHouseBasicInfo.house_size),
+                                       func.avg(HlHouseBasicInfo.deal_time_span))\
                 .filter(HlHouseBasicInfo.city == city).filter(HlHouseBasicInfo.community == community)\
                 .filter(HlHouseBasicInfo.status == config.HOUSE_STATUS['DEAL'])\
                 .filter(HlHouseBasicInfo.deal_date.between(time_begin, time_end))

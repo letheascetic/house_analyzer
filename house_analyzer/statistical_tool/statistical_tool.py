@@ -22,7 +22,7 @@ class StatisticalTool:
         pass
 
     def _init_logger(self):
-        util.config_logger()
+        # util.config_logger()
         self.logger = logging.getLogger(__name__)
 
     def _init_paras(self):
@@ -63,7 +63,7 @@ class StatisticalTool:
                 community_info.total_sold = self.sql_helper.get_community_total_sold(city, community, next_month_first_day.strftime('%Y-%m-%d'))
                 self.logger.info('community[{0}] total on sale[{1}].'.format(community, community_info.total_on_sale))
                 self.logger.info('community[{0}] total off sale[{1}].'.format(community, community_info.total_off_sale))
-                self.logger.info('community[{0}] total on sold[{1}].'.format(community, community_info.total_sold))
+                self.logger.info('community[{0}] total sold[{1}].'.format(community, community_info.total_sold))
 
                 new_on_sale = self.sql_helper.get_community_new_on_sale(city, community, this_month_first_day.strftime('%Y-%m-%d'), next_month_first_day.strftime('%Y-%m-%d'))
                 self.logger.info('community[{0}] new on sale[{1}].'.format(community, new_on_sale))

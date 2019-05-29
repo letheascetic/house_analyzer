@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import logging
+import datetime
 from sqlalchemy.ext.declarative import declarative_base
 
 from conf import config
@@ -79,8 +80,9 @@ class SqlHl(ISqlHelper):
                 return self.add(row)
             else:
                 logger.info('old house info[{0}].'.format(item['house_id']))
+                # 从在售状态变为成交状态
                 if row.status in config.HOUSE_STATUS_SALE and item['status'] in config.HOUSE_STATUS_DEAL:
-                    logger.info('house[{0}] status change: [{1}] to [{2}].'.format(row.house_id, row.status, item['status']))
+                    # logger.info('house[{0}] status change: [{1}] to [{2}].'.format(row.house_id, row.status, item['status']))
                     row.deal_date = item['deal_date']
                     row.deal_total_price = item['deal_total_price']
                     row.deal_unit_price = item['deal_unit_price']
@@ -88,6 +90,17 @@ class SqlHl(ISqlHelper):
                     row.list_total_price = item['list_total_price']
                     row.list_unit_price = item['list_unit_price']
                     row.price_change_times = item['price_change_times']
+
+                # 从成交状态变为在售状态
+                if row.status in config.HOUSE_STATUS_DEAL and item['status'] in config.HOUSE_STATUS_SALE:
+                    # logger.info('house[{0}] status change: [{1}] to [{2}].'.format(row.house_id, row.status, item['status']))
+                    row.deal_date = None
+                    row.deal_total_price = None
+                    row.deal_unit_price = None
+                    row.deal_time_span = None
+                    row.list_total_price = None
+                    row.list_unit_price = None
+                    row.price_change_times = None
 
                 if row.status != item['status']:
                     logger.info('house[{0}] status change: [{1}] to [{2}].'.format(row.house_id, row.status, item['status']))
@@ -130,26 +143,49 @@ class SqlHl(ISqlHelper):
                 .order_by(HlHouseDynamicInfo.record_date.desc())
             return query.first()
         except Exception as e:
-            logger.exception('query house dynamic info[{0}] exception[{1}]'.format(house_id, e))
+            logger.exception('query newest house dynamic info[{0}] exception[{1}]'.format(house_id, e))
 
-    def insert_or_update_house_dynamic_info(self, house_id, record_date, price):
+    def query_all_house_dynamic_info(self, house_id):
         try:
-            total_price, unit_price = price
-            dynamic_info = self.query_newest_house_dynamic_info(house_id)
+            query = self.session.query(HlHouseDynamicInfo).filter(HlHouseDynamicInfo.house_id == house_id)\
+                .order_by(HlHouseDynamicInfo.record_date.desc())
+            return query.all()
+        except Exception as e:
+            logger.exception('query all house dynamic info[{0}] exception[{1}]'.format(house_id, e))
 
-            if dynamic_info is None:
-                logger.info('new house[{0}] dynamic info[{1}|{2}]'.format(house_id, record_date, price))
-                new_dynamic_info = HlHouseDynamicInfo(
-                    house_id=house_id,
-                    record_date=record_date,
-                    total_price=total_price,
-                    unit_price=unit_price
-                )
-                self.session.add(new_dynamic_info)
-            elif dynamic_info.record_date != record_date:
-                if dynamic_info.total_price != total_price:
-                    logger.info('house[{0}] dynamic info update from [{1}|{2}] to [{3}|{4}]'.format(
-                        house_id, dynamic_info.record_date, (dynamic_info.total_price, dynamic_info.unit_price), record_date, price))
+    def insert_or_update_house_dynamic_info(self, item):
+        try:
+            house_id = item['house_id']
+
+            if item['status'] in config.HOUSE_STATUS_DEAL:
+                all_dynamic_info_record_date = []
+                all_dynamic_info = self.query_all_house_dynamic_info(house_id)
+                if all_dynamic_info is not None:
+                    all_dynamic_info_record_date = [dynamic_info.strftime('%Y-%m-%d') for dynamic_info in all_dynamic_info]
+                if item['deal_date'] not in all_dynamic_info_record_date and \
+                        item['deal_total_price'] is not None and item['deal_unit_price'] is not None:
+                    new_dynamic_info = HlHouseDynamicInfo(
+                        house_id=house_id,
+                        record_date=item['deal_date'],
+                        total_price=item['deal_total_price'],
+                        unit_price=item['deal_unit_price']
+                    )
+                    self.session.add(new_dynamic_info)
+                if item['list_date'] not in all_dynamic_info_record_date and \
+                        item['list_total_price'] is not None and item['list_unit_price'] is not None:
+                    new_dynamic_info = HlHouseDynamicInfo(
+                        house_id=house_id,
+                        record_date=item['list_date'],
+                        total_price=item['list_total_price'],
+                        unit_price=item['list_unit_price']
+                    )
+                    self.session.add(new_dynamic_info)
+            else:
+                record_date = datetime.datetime.today().strftime('%Y-%m-%d')
+                total_price, unit_price = item['total_price'], item['unit_price']
+                dynamic_info = self.query_newest_house_dynamic_info(house_id)
+                if dynamic_info is None:
+                    logger.info('new house[{0}] dynamic info[{1}|{2}]'.format(house_id, record_date, (total_price, unit_price)))
                     new_dynamic_info = HlHouseDynamicInfo(
                         house_id=house_id,
                         record_date=record_date,
@@ -157,17 +193,28 @@ class SqlHl(ISqlHelper):
                         unit_price=unit_price
                     )
                     self.session.add(new_dynamic_info)
-            else:
-                if dynamic_info.total_price != total_price:
-                    logger.info('house[{0}] dynamic info update from [{1}|{2}] to [{3}|{4}]'.format(
-                        house_id, dynamic_info.record_date, (dynamic_info.total_price, dynamic_info.unit_price), record_date, price))
-                    dynamic_info.total_price = total_price
-                    dynamic_info.unit_price = unit_price
-            self.session.commit()
+                elif dynamic_info.record_date != record_date:
+                    if dynamic_info.total_price != total_price:
+                        logger.info('house[{0}] dynamic info update from [{1}|{2}] to [{3}|{4}]'.format(
+                            house_id, dynamic_info.record_date, (dynamic_info.total_price, dynamic_info.unit_price), record_date, (total_price, unit_price)))
+                        new_dynamic_info = HlHouseDynamicInfo(
+                            house_id=house_id,
+                            record_date=record_date,
+                            total_price=total_price,
+                            unit_price=unit_price
+                        )
+                        self.session.add(new_dynamic_info)
+                else:
+                    if dynamic_info.total_price != total_price:
+                        logger.info('house[{0}] dynamic info update from [{1}|{2}] to [{3}|{4}]'.format(
+                            house_id, dynamic_info.record_date, (dynamic_info.total_price, dynamic_info.unit_price), record_date, (total_price, unit_price)))
+                        dynamic_info.total_price = total_price
+                        dynamic_info.unit_price = unit_price
+                self.session.commit()
 
         except Exception as e:
             self.session.rollback()
-            logger.exception('insert or update house dynamic info[{0}:{1}:{2}] exception[{3}]'.format(house_id, record_date, price, e))
+            logger.exception('insert or update house dynamic info[{0}] exception[{1}]'.format(item, e))
 
     def get_all_house_basic_info(self):
         try:
@@ -262,6 +309,14 @@ class SqlHl(ISqlHelper):
             return None
         except Exception as e:
             logger.exception('get community[{0}:{1}] last statistical date exception[{2}]'.format(city, community, e))
+
+    def get_community_all_statistical_dates(self, city, community):
+        try:
+            query = self.session.query(HlCommunityDynamicInfo.statistical_date)\
+                .filter(HlCommunityDynamicInfo.city == city).filter(HlCommunityDynamicInfo.community == community)
+            return query.all()
+        except Exception as e:
+            logger.exception('get community[{0}:{1}] all statistical dates exception[{2}]'.format(city, community, e))
 
     def insert_community_dynamic_info(self, community_info):
         try:

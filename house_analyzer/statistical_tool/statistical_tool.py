@@ -23,14 +23,19 @@ class StatisticalTool:
 
     def do_statistics(self):
 
-        today = datetime.datetime.utcnow()
-
         for city, community in self.sql_helper.get_all_communities():
-            self.logger.info('start to statistics city[{0}], community[{1}]'.format(city, community))
-            statistical_date = self.sql_helper.get_community_last_statistical_date(city, community)
-            if statistical_date is not None and statistical_date.year == today.year and statistical_date.month == today.month:
-                self.logger.info('community[{0}] already has statistics.'.format(community))
-                continue
+            all_statistical_dates = self.sql_helper.get_community_all_statistical_dates(city, community)
+            all_statistical_dates = [statistical_date[0].strftime('%Y-%m') for statistical_date in all_statistical_dates]
+            new_statistical_dates = self.get_new_statistical_dates(all_statistical_dates)
+
+            for statistical_date in new_statistical_dates:
+                self.logger.info('start to statistics city[{0}] community[{1}] date[{2}]'.format(city, community, statistical_date.strftime('%Y-%m')))
+
+
+            # statistical_date = self.sql_helper.get_community_last_statistical_date(city, community)
+            # if statistical_date is not None and statistical_date.year == today.year and statistical_date.month == today.month:
+            #     self.logger.info('community[{0}] already has statistics.'.format(community))
+            #     continue
 
             community_info = HlCommunityDynamicInfo(city=city, community=community, statistical_date=today.strftime('%Y-%m-%d'))
             community_info.total_on_sale, community_info.total_off_sale, community_info.total_sold = 0, 0, 0
@@ -96,3 +101,16 @@ class StatisticalTool:
 
             self.sql_helper.insert_community_dynamic_info(community_info)
             pass
+
+    def get_new_statistical_dates(self, all_statistical_dates):
+        today = datetime.datetime.utcnow()
+        statistical_begin = datetime.datetime.strptime('2016-06', "%Y-%m")
+        statistical_end = datetime.datetime(today.year, today.month-1, 1)
+
+        new_statistical_dates = []
+        statistical_date = statistical_begin
+        while statistical_date <= statistical_end:
+            if statistical_date.strftime("%Y-%m") not in all_statistical_dates:
+                new_statistical_dates.append(statistical_date)
+
+        return new_statistical_dates

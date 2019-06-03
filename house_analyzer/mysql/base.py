@@ -93,10 +93,10 @@ class HlHouseDynamicInfo(_Base):
     update_time = Column('update_time', TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
 
-class HlCommunityDynamicInfo(_Base):
-    """class for hl_community_dynamic_info"""
+class HlCommunityStatisticalInfo(_Base):
+    """class for hl_community_statistical_info"""
 
-    __tablename__ = 'hl_community_dynamic_info'
+    __tablename__ = 'hl_community_statistical_info'
 
     id = Column('id', BIGINT, primary_key=True, autoincrement=True, nullable=False)
     community = Column('community', VARCHAR(64), index=True, nullable=False)
@@ -113,4 +113,41 @@ class HlCommunityDynamicInfo(_Base):
     new_sold_unit_price = Column('new_sold_unit_price', FLOAT, nullable=False)
     new_sold_unit_price_per_size = Column('new_sold_unit_price_per_size', FLOAT, nullable=False)
     new_sold_time_span = Column('new_sold_time_span', FLOAT, nullable=False)
+    update_time = Column('update_time', TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
+class HlCommunityBasicInfo(_Base):
+    """class for hl_community_basic_info"""
+
+    __tablename__ = 'hl_community_basic_info'
+
+    community_id = Column('community_id', VARCHAR(64), primary_key=True, nullable=False)
+    community = Column('community', VARCHAR(64), index=True, nullable=False)
+    city = Column('city', VARCHAR(64), index=True, nullable=False)
+    address = Column('address', VARCHAR(256), nullable=True)
+    architectural_age = Column('architectural_age', VARCHAR(64), nullable=True)
+    architectural_type = Column('architectural_type', VARCHAR(64), nullable=True)
+    property_costs = Column('property_costs', VARCHAR(64), nullable=True)
+    property_company = Column('property_company', VARCHAR(64), nullable=True)
+    developer = Column('developer', VARCHAR(64), nullable=True)
+    total_buildings = Column('total_buildings', VARCHAR(64), nullable=True)
+    total_houses = Column('total_houses', VARCHAR(64), nullable=True)
+    district = Column('district', VARCHAR(64), nullable=True)
+    location = Column('location', VARCHAR(64), nullable=True)
+    subway_info = Column('subway_info', VARCHAR(256), nullable=True)
+    update_time = Column('update_time', TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+
+
+class HlCommunityDynamicInfo(_Base):
+    """class for hl_community_dynamic_info"""
+
+    __tablename__ = 'hl_community_dynamic_info'
+
+    id = Column('id', BIGINT, primary_key=True, autoincrement=True, nullable=False)
+    community = Column('community', VARCHAR(64), index=True, nullable=False)
+    city = Column('city', VARCHAR(64), index=True, nullable=False)
+    record_date = Column('record_date', DATE, index=True, default=None, nullable=False)
+    sold_recently = Column('sold_recently', INTEGER, nullable=True)
+    on_sale = Column('on_sale', INTEGER, nullable=True)
+    unit_price = Column('unit_price', FLOAT, nullable=True)
     update_time = Column('update_time', TIMESTAMP, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)

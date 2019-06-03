@@ -8,7 +8,7 @@ import datetime
 from utils import util
 from conf import config
 from mysql.sqlhl import SqlHl
-from homelink.items import HomelinkItem
+from homelink.items import HlHouseItem
 from twisted.internet.error import DNSLookupError
 from scrapy.spidermiddlewares.httperror import HttpError
 from twisted.internet.error import TimeoutError, TCPTimedOutError
@@ -29,7 +29,7 @@ class HzSpider(scrapy.Spider):
 
     def __init__(self, *args, **kwargs):
         super(HzSpider, self).__init__(*args, **kwargs)
-        self.sql_helper = SqlHl(config.MYSQL_CONFIG_PRODUCTION)
+        self.sql_helper = SqlHl(config.MYSQL_CONFIG_TESTING)
         self._init_logger()
         self._init_start_urls()
 
@@ -97,7 +97,7 @@ class HzSpider(scrapy.Spider):
         house_id = response.url.split('/')[-1].split('.')[0]
 
         # 必填项
-        item = HomelinkItem()
+        item = HlHouseItem()
         item['url'] = response.url
         item['city'] = 'hz'
         item['house_id'] = house_id
@@ -152,7 +152,7 @@ class HzSpider(scrapy.Spider):
         house_id = response.url.split('/')[-1].split('.')[0]
 
         # 必填项
-        item = HomelinkItem()
+        item = HlHouseItem()
         item['url'] = response.url
         item['city'] = 'hz'
         item['house_id'] = house_id

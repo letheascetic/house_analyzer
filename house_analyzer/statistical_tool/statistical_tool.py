@@ -120,7 +120,7 @@ class StatisticalTool:
                 else:
                     community_info.new_sold_unit_price_per_size = round(new_sold_info[2] / new_sold_info[3] * 10000, 2)
 
-                self.sql_helper.insert_community_dynamic_info(community_info)
+                self.sql_helper.insert_community_statistical_info(community_info)
 
     def get_statistical_date_relevant(self, statistical_date):
         statistical_month = datetime.datetime.strptime(statistical_date, "%Y-%m")

@@ -8,7 +8,7 @@
 import scrapy
 
 
-class HomelinkItem(scrapy.Item):
+class HlHouseItem(scrapy.Item):
     # define the fields for your item here like:
 
     # 必填项
@@ -53,5 +53,30 @@ class HomelinkItem(scrapy.Item):
     list_total_price = scrapy.Field()       # 挂牌总价
     list_unit_price = scrapy.Field()
     price_change_times = scrapy.Field()     # 调价次数
-
     pass
+
+
+class HlCommunityBasicInfoItem(scrapy.Item):
+    city = scrapy.Field()                   # 所在城市
+    community = scrapy.Field()              # 小区名称
+    community_id = scrapy.Field()           # 小区ID
+    address = scrapy.Field()                # 小区地址
+    architectural_age = scrapy.Field()      # 建筑年代
+    architectural_type = scrapy.Field()     # 建筑类型
+    property_costs = scrapy.Field()         # 物业费用
+    property_company = scrapy.Field()       # 物业公司
+    developer = scrapy.Field()              # 开发商
+    total_buildings = scrapy.Field()        # 楼栋总数
+    total_houses = scrapy.Field()           # 房屋总数
+    district = scrapy.Field()               # 所在区
+    location = scrapy.Field()               # 所在路
+    subway_info = scrapy.Field()            # 地铁信息
+
+
+class HlCommunityDynamicInfoItem(scrapy.Item):
+    city = scrapy.Field()                   # 所在城市
+    community = scrapy.Field()              # 小区名称
+    record_date = scrapy.Field()            #
+    sold_recently = scrapy.Field()          # 90天内成交
+    on_sale = scrapy.Field()                # 正在出售
+    unit_price = scrapy.Field()             # 参考价格

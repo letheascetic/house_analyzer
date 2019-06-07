@@ -20,13 +20,14 @@ class CommunitySpider(scrapy.Spider):
     name = 'community'
     allowed_domains = ['sx.lianjia.com', 'nj.lianjia.com', 'hz.lianjia.com']
 
-    communities = set()
     logger = None
     sql_helper = None
 
     nj_districts = ['gulou', 'jianye', 'qinhuai', 'xuanwu', 'yuhuatai', 'qixia', 'jiangning', 'pukou', 'liuhe', 'lishui', 'gaochun']
     hz_districts = ['xihu', 'xiacheng', 'jianggan', 'gongshu', 'shangcheng', 'binjiang', 'yuhang', 'xiaoshan', 'tonglu1', 'chunan1', 'jiande',
-                 'fuyang', 'linan', 'dajiangdong1', 'qiantangxinqu']
+                    'fuyang', 'linan', 'dajiangdong1', 'qiantangxinqu']
+
+    community_ids = set()
 
     def __init__(self, *args, **kwargs):
         super(CommunitySpider, self).__init__(*args, **kwargs)
@@ -89,6 +90,10 @@ class CommunitySpider(scrapy.Spider):
             location = community_selector.xpath('.//div[@class = "positionInfo"]/a[@class = "bizcircle"]/text()').extract_first()
             subway_info = community_selector.xpath('.//div[@class = "tagList"]/span/text()').extract_first()
 
+            if community_id in self.community_ids:
+                self.logger.info('community_id[{0}] already crawlered.'.format(community_id))
+                return
+
             basic_item = HlCommunityBasicInfoItem()
             basic_item['community'] = community
             basic_item['city'] = city
@@ -100,8 +105,14 @@ class CommunitySpider(scrapy.Spider):
             yield response.follow(href, meta={'item': basic_item}, callback=self.parse_basic_info, dont_filter=True)
 
     def parse_basic_info(self, response):
-        self.logger.info('current detail url: {0}'.format(response.url))
+        self.logger.info('parse basic info url: {0}'.format(response.url))
         basic_item = response.meta['item']
+
+        if basic_item['community_id'] not in response.url:
+            self.logger.info('not right url for item[{0}]'.format(basic_item))
+            return
+
+        self.community_ids.add(basic_item['community_id'])
 
         address = response.xpath('//div[@class = "detailDesc"]/text()').extract_first()
         info = response.xpath('//div[@class = "xiaoquInfoItem"]/span[@class = "xiaoquInfoContent"]/text()').extract()

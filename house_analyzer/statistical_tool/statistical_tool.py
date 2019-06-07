@@ -7,7 +7,7 @@ import datetime
 from utils import util
 from conf import config
 from mysql.sqlhl import SqlHl
-from mysql.base import HlCommunityDynamicInfo
+from mysql.base import HlCommunityStatisticalInfo
 
 
 class StatisticalTool:
@@ -55,7 +55,7 @@ class StatisticalTool:
             for statistical_date in new_statistical_dates:
                 self.logger.info('start to statistics city[{0}] community[{1}] date[{2}]'.format(city, community, statistical_date))
                 statistical_month, this_month_first_day, next_month_first_day = self.get_statistical_date_relevant(statistical_date)
-                community_info = HlCommunityDynamicInfo(city=city, community=community, statistical_date=statistical_date)
+                community_info = HlCommunityStatisticalInfo(city=city, community=community, statistical_date=statistical_date)
                 # community_info.total_on_sale, community_info.total_off_sale, community_info.total_sold = 0, 0, 0
 
                 community_info.total_on_sale = self.sql_helper.get_community_total_on_sale(city, community, next_month_first_day.strftime('%Y-%m-%d'))

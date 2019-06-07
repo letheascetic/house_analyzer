@@ -17,7 +17,7 @@ class StatisticalTool:
 
     def __init__(self):
         self._init_logger()
-        self.sql_helper = SqlHl(config.MYSQL_CONFIG_TESTING)
+        self.sql_helper = SqlHl(config.MYSQL_CONFIG_PRODUCTION)
         self._init_paras()
         pass
 

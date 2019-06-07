@@ -24,7 +24,7 @@ class Hz2Spider(scrapy.Spider):
 
     def __init__(self, *args, **kwargs):
         super(Hz2Spider, self).__init__(*args, **kwargs)
-        self.sql_helper = SqlHl(config.MYSQL_CONFIG_TESTING)
+        self.sql_helper = SqlHl(config.MYSQL_CONFIG_PRODUCTION)
         self._init_logger()
         self._init_start_urls()
 
